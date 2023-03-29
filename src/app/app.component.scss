@@ -1,0 +1,16 @@
+.mat-mdc-header-row {
+  position: sticky;
+  top: 0;
+}
+
+.cdk-row:hover {
+  background-color: rgba(0, 0, 0, 0.025) !important;
+}
+
+.hover {
+  cursor: pointer;
+}
+
+.hover:hover {
+  color: blue;
+}

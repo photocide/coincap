@@ -1,0 +1,38 @@
+<div class="coin-container">
+  <h2>{{ data.name }} ({{ data.marketCapRank }})</h2>
+  <p>
+    <span>Market Dominance: {{ data.marketCapDominance }}</span>
+  </p>
+  <p>
+    <span>Circulating Supply: {{ data.circulatingSupply | number }}</span>
+  </p>
+  <p>
+    <span>All time high: {{ data.allTimeHigh }}</span>
+    <span
+      [ngClass]="{
+        green: data.allTimeHighPercentage > 0,
+        red: data.allTimeHighPercentage < 0
+      }"
+    >
+      ({{ data.allTimeHighPercentage }}%)</span
+    >
+    <span> {{ data.allTimeHighWhen }}</span>
+  </p>
+  <p>
+    <span>All time low: {{ data.allTimeLow }}</span>
+    <span
+      [ngClass]="{
+        green: data.allTimeLowPercentage > 0,
+        red: data.allTimeLowPercentage < 0
+      }"
+    >
+      ({{ data.allTimeLowPercentage }}%)</span
+    >
+    <span> {{ data.allTimeLowWhen }}</span>
+  </p>
+  <p [innerHTML]="data.description"></p>
+</div>
+<br />
+<div matSnackBarActions style="justify-content: flex-end">
+  <button mat-button matSnackBarAction (click)="snackBarRef.dismissWithAction()">Close</button>
+</div>
