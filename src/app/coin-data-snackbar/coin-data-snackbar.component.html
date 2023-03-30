@@ -1,34 +1,10 @@
 <div class="coin-container">
-  <h2>{{ data.name }} ({{ data.marketCapRank }})</h2>
+  <h2>{{ data.name }} (#{{ data.cmc_rank }})</h2>
   <p>
-    <span>Market Dominance: {{ data.marketCapDominance }}</span>
+    <span>Market Dominance: {{ data.market_cap_dominance }}%</span>
   </p>
   <p>
-    <span>Circulating Supply: {{ data.circulatingSupply | number }}</span>
-  </p>
-  <p>
-    <span>All time high: {{ data.allTimeHigh }}</span>
-    <span
-      [ngClass]="{
-        green: data.allTimeHighPercentage > 0,
-        red: data.allTimeHighPercentage < 0
-      }"
-    >
-      ({{ data.allTimeHighPercentage }}%)</span
-    >
-    <span> {{ data.allTimeHighWhen }}</span>
-  </p>
-  <p>
-    <span>All time low: {{ data.allTimeLow }}</span>
-    <span
-      [ngClass]="{
-        green: data.allTimeLowPercentage > 0,
-        red: data.allTimeLowPercentage < 0
-      }"
-    >
-      ({{ data.allTimeLowPercentage }}%)</span
-    >
-    <span> {{ data.allTimeLowWhen }}</span>
+    <span>Circulating Supply: {{ data.circulating_supply | number }}</span>
   </p>
   <p [innerHTML]="data.description"></p>
 </div>

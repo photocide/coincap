@@ -36,5 +36,6 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.0.0",
     "typescript": "~4.9.4"
-  }
+  },
+  "apiKey": "a0270a5a-f1d1-4455-9f14-6e960b4b8554"
 }

@@ -4,9 +4,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource } from '@angular/material/table';
-import { concat, map, tap } from 'rxjs';
+import { concatMap, map, tap } from 'rxjs';
 import { CoinDataSnackbarComponent } from './coin-data-snackbar/coin-data-snackbar.component';
 import { CustomMarketCapDialogComponent } from './custom-market-cap-dialog/custom-market-cap-dialog.component';
+import packageJSON from 'package.json';
 
 @Component({
   selector: 'app-root',
@@ -15,20 +16,19 @@ import { CustomMarketCapDialogComponent } from './custom-market-cap-dialog/custo
 })
 export class AppComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = [
-    '#',
-    'img',
+    'cmc_rank',
+    'logo',
     'name',
     'price',
-    '1H',
-    '24H',
-    '7D',
-    'last7DTrend',
-    'Market Cap',
+    'percent_change_1h',
+    'percent_change_24h',
+    'percent_change_7d',
+    'market_cap',
     '1TMCP',
     'BTCMCP',
     'ETHMCP',
     'BNBMCP',
-    'customMarketCapPrice'
+    'custom_market_cap_price'
   ];
 
   dataSource = new MatTableDataSource<any>();
@@ -38,68 +38,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   customMarketCap: number = 1000000000000;
 
   constructor(private http: HttpClient, private dialog: MatDialog, private snackBar: MatSnackBar) { }
-
-  private fetchData(page: number) {
-    return this.http.get(`https://www.coingecko.com/?page=${page}`, {
-      responseType: 'text'
-    })
-      .pipe(
-        map(text => {
-          const html = document.createElement('html');
-          html.innerHTML = text;
-          return html;
-        }),
-        map(html => html.querySelector('[data-target="currencies.contentBox"]')),
-        map(html => [...html!.querySelectorAll('tr')]),
-        map(arr => arr.map((e, i) => {
-          return {
-            index: this.dataSource.data.length + i + 1,
-            name: e.querySelector('td:nth-child(3) a span')?.textContent?.replace(/\n/g, '')!,
-            symbol: e.querySelector('td:nth-child(3) a span + span')?.textContent?.replace(/\n/g, '')!,
-            image: e.querySelector('td:nth-child(3) div img')?.getAttribute('src')?.replace(/\n/g, '')!,
-            priceString: e.querySelector('td:nth-child(4)')?.textContent?.replace(/\n/g, '')!,
-            priceChange1H: +e.querySelector('td:nth-child(5)')?.textContent?.replace(/[\n|\%]/g, '')!,
-            priceChange24H: +e.querySelector('td:nth-child(6)')?.textContent?.replace(/[\n|\%]/g, '')!,
-            priceChange7D: +e.querySelector('td:nth-child(7)')?.textContent?.replace(/[\n|\%]/g, '')!,
-            marketCapString: e.querySelector('td:nth-child(9)')?.textContent?.replace(/\n/g, '')!,
-            price: +e.querySelector('td:nth-child(4)')?.textContent?.replace(/[\n|,|$]/g, '')!,
-            marketCap: +e.querySelector('td:nth-child(9)')?.textContent?.replace(/[\n|,|$]/g, '')!,
-            last7DTrend: e.querySelector('td:last-child img')?.getAttribute('src')?.replace(/\n/g, '')!,
-          }
-        })),
-        map(arr => arr.map(e => {
-          const btcMarketCap = (this.dataSource.data.length > 1 ? this.dataSource.data : arr).find(e => e.symbol == 'BTC')?.marketCap!;
-          const ethMarketCap = (this.dataSource.data.length > 1 ? this.dataSource.data : arr).find(e => e.symbol == 'ETH')?.marketCap!;
-          const bnbMarketCap = (this.dataSource.data.length > 1 ? this.dataSource.data : arr).find(e => e.symbol == 'BNB')?.marketCap!;
-          return {
-            ...e,
-            btcMarketCap,
-            ethMarketCap,
-            bnbMarketCap,
-            priceStringAtOneTrillionDollarMarketCap: `$${(1000000000000 / e.marketCap * e.price).toFixed(2)}`,
-            priceStringAtOneTrillionDollarMarketCapMultiplier: +(1000000000000 / e.marketCap).toFixed(2),
-            priceStringAtBitcoinDollarMarketCap: `$${(btcMarketCap / e.marketCap * e.price).toFixed(2)}`,
-            priceStringAtBitcoinDollarMarketCapMultiplier: +(btcMarketCap / e.marketCap).toFixed(2),
-            priceStringAtEthereumDollarMarketCap: `$${(ethMarketCap / e.marketCap * e.price).toFixed(2)}`,
-            priceStringAtEthereumDollarMarketCapMultiplier: +(ethMarketCap / e.marketCap).toFixed(2),
-            priceStringAtBNBDollarMarketCap: `$${(bnbMarketCap / e.marketCap * e.price).toFixed(2)}`,
-            priceStringAtBNBDollarMarketCapMultiplier: +(bnbMarketCap / e.marketCap).toFixed(2)
-          }
-        })),
-        tap(arr => this.dataSource.data = [
-          ...this.dataSource.data,
-          ...arr
-        ]),
-      )
-  }
-
-  private loadBatch(page: number) {
-    const req = [];
-    for (let i = 0; i < page; i++) {
-      req.push(this.fetchData(i + 1));
-    }
-    concat(...req).subscribe();
-  }
 
   openCustomMarketCapDialog() {
     const dialogRef = this.dialog.open(CustomMarketCapDialogComponent, {
@@ -134,59 +72,72 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
-  getCoinData(_id: string) {
-    let page: any = null;
-    let id = _id.toLowerCase().split(' ').join('-');
-
-    //Edge cases
-    if (id == 'juno' || id == 'request') id += '-network';
-
-    this.http.get(`https://www.coingecko.com/en/coins/${id}`, {
-      responseType: 'text'
-    })
-      .pipe(
-        map(text => {
-          const html = document.createElement('html');
-          html.innerHTML = text;
-          page = html;
-          return html;
-        }),
-        map(html => html.querySelectorAll('[itemtype="https://schema.org/Table"] table tr')),
-        map(html => [...html]),
-        map(arr => ({
-          marketCapRank: arr[4].querySelector('td')!.textContent?.replace(/\n/g, ''),
-          marketCapDominance: arr[6].querySelector('.tw-text-right')!.textContent?.replace(/\n/g, ''),
-          allTimeHigh: arr[8].querySelector('[data-target="price.price"]')!.textContent?.replace(/\n/g, ''),
-          allTimeHighWhen: arr[8].querySelector('small')!.textContent?.replace(/\n/g, ''),
-          allTimeHighPercentage: +arr[8].querySelector('[data-target="price.price"] + span')!.textContent?.replace(/[\n|\%|,]/g, '')!,
-          allTimeLow: arr[9].querySelector('[data-target="price.price"]')!.textContent?.replace(/\n/g, ''),
-          allTimeLowWhen: arr[9].querySelector('small')!.textContent?.replace(/\n/g, ''),
-          allTimeLowPercentage: +arr[9].querySelector('[data-target="price.price"] + span')!.textContent?.replace(/[\n|\%|,]/g, '')!,
-        })),
-        map(data => ({
-          ...data,
-          circulatingSupply: +page.querySelector('[data-controller="coins-information"] div')?.textContent
-            .replace(/[\n|\s|,]/g, '')
-            .match(/(?=CirculatingSupply).+(?=TotalSupply)/g)
-            .toString()
-            .replace('CirculatingSupply', ''),
-          description: page.querySelector('[data-target="read-more.description"]')?.innerHTML
-        })),
-        map(data => {
-          this.snackBar.openFromComponent(
-            CoinDataSnackbarComponent,
-            {
-              verticalPosition: 'top',
-              horizontalPosition: 'center',
-              data: { ...data, name: _id }
-            })
-        })
-      )
-      .subscribe()
+  getCoinData(data: any) {
+    this.snackBar.openFromComponent(
+      CoinDataSnackbarComponent,
+      {
+        verticalPosition: 'top',
+        horizontalPosition: 'center',
+        data
+      });
   }
 
   ngOnInit() {
-    this.loadBatch(4);
+    const headers = { 'X-CMC_PRO_API_KEY': packageJSON.apiKey };
+    const ids: string[] = [];
+    let coins: any[] = [];
+
+    this.http.get<{ data: any }>(
+      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
+      headers,
+      params: {
+        limit: 400
+      }
+    })
+      .pipe(
+        map(({ data }) => data),
+        map((data) => {
+          coins = [...data];
+          return data;
+        }),
+        tap(data => [...data].map(({ id }) => ids.push('' + id))),
+        concatMap(() => this.http.get<{ data: any }>(
+          'https://pro-api.coinmarketcap.com/v2/cryptocurrency/info', {
+          headers,
+          params: {
+            id: ids.join(','),
+            aux: 'logo,description'
+          }
+        })),
+        map(({ data }) => data),
+        map((data) => {
+          coins = coins.map((c, i) => {
+            c = { ...c, ...c.quote.USD, ...data[c.id] }
+            return c;
+          });
+          localStorage.setItem('coins', JSON.stringify(coins))
+          return coins;
+        }),
+        map(data => this.dataSource.data = [...data])
+      )
+      .subscribe({
+        error: () => {
+          this.dataSource.data = JSON.parse(localStorage.getItem('coins') || '[]');
+          this.snackBar.open('Something went wrong, using cached data', 'Close');
+        },
+      });
+  }
+
+  get btcMarketCap() {
+    return this.dataSource.data.find(c => c.symbol == 'BTC').market_cap;
+  }
+
+  get ethMarketCap() {
+    return this.dataSource.data.find(c => c.symbol == 'ETH').market_cap;
+  }
+
+  get bnbMarketCap() {
+    return this.dataSource.data.find(c => c.symbol == 'BNB').market_cap;
   }
 
   ngAfterViewInit() {
